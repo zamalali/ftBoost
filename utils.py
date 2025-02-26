@@ -164,20 +164,30 @@ def validate_jsonl_record(record: dict) -> bool:
 def get_text(value: Any) -> str:
     """
     Ensure the value is returned as a string.
-    If it is a list, return only the first element.
-    If it resembles a dictionary string, attempt to extract the 'text' key.
+    If it is a list, return the first element (recursively).
+    If it is a dict and contains a "text" key, return that.
+    If it is a string that looks like a dict, attempt to parse it.
     """
     if isinstance(value, list):
-        value = value[0] if value else ""
-    if isinstance(value, str):
-        try:
-            parsed = ast.literal_eval(value)
-            if isinstance(parsed, dict) and "text" in parsed:
-                return str(parsed["text"])
-        except Exception:
-            pass
-        return value
-    return str(value)
+        if value:
+            return get_text(value[0])
+        return ""
+    elif isinstance(value, dict):
+        if "text" in value:
+            return str(value["text"])
+        return str(value)
+    elif isinstance(value, str):
+        val = value.strip()
+        if val.startswith("{") and val.endswith("}"):
+            try:
+                parsed = ast.literal_eval(val)
+                if isinstance(parsed, dict) and "text" in parsed:
+                    return str(parsed["text"])
+            except Exception:
+                pass
+        return val
+    else:
+        return str(value)
 
 # -----------------------------
 # Augmentation Generation via LangChain Groq
@@ -415,7 +425,6 @@ def format_for_gemini(augmentations: List[Dict[str, Any]]) -> str:
                 {"role": "model", "parts": [{"text": assistant_val}]}
             ]
         }
-        # Basic validation: ensure both parts are non-empty.
         if user_val and assistant_val:
             output_lines.append(json.dumps(record))
         else:
