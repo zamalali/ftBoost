@@ -1,12 +1,21 @@
+"""
+utils.py
+
+This module provides a robust, scalable pipeline for finetuning data augmentation.
+It includes data models, preprocessing functions, dynamic strategy selection,
+augmentation generation via LangChain Groq, quality assurance, and post‐processing
+to produce outputs in the OpenAI or Gemini fine‐tuning JSONL format.
+"""
+
 import os
 import json
 import uuid
 import logging
 import re
 import random
-from typing import List, Dict, Any
+import ast
+from typing import List, Dict, Any, Optional
 
-# Load environment variables from .env
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -19,11 +28,14 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")  # Must be set in .env
 
 # -----------------------------
-# Step 1: Collect & Preprocess Input
+# Data Models and Preprocessing
 # -----------------------------
 from pydantic import BaseModel, field_validator, ValidationError
 
 class AugmentationExample(BaseModel):
+    """
+    Input/output example for augmentation.
+    """
     input_text: str
     output_text: str
 
@@ -34,24 +46,33 @@ class AugmentationExample(BaseModel):
         return v.strip()
 
 class AugmentationConfig(BaseModel):
+    """
+    Configuration for the augmentation process.
+    """
     target_model: str  # e.g., "mixtral-8x7b-32768" or any Groq-supported model name
     examples: List[AugmentationExample]
     finetuning_goal: str
+    system_message: Optional[str] = "Marv is a factual chatbot that is also sarcastic."
 
     @field_validator('examples')
     def check_examples_length(cls, v: List[AugmentationExample]) -> List[AugmentationExample]:
-        if not (5 <= len(v) <= 10):
-            raise ValueError("Provide between 5 and 10 examples")
+        if not (3 <= len(v) <= 10):
+            raise ValueError("Provide between 3 and 10 examples")
         return v
 
-# Standardized intermediate format for examples
 class StandardExample(BaseModel):
+    """
+    Standardized format for input examples.
+    """
     id: str
     input_text: str
     output_text: str
     metadata: Dict[str, Any] = {}
 
 def normalize_examples(examples: List[AugmentationExample]) -> List[StandardExample]:
+    """
+    Normalize and standardize input examples.
+    """
     normalized = []
     for ex in examples:
         norm_ex = StandardExample(
@@ -65,28 +86,28 @@ def normalize_examples(examples: List[AugmentationExample]) -> List[StandardExam
     return normalized
 
 # -----------------------------
-# Step 2: Dynamic Strategy Selection
+# Dynamic Strategy Selection
 # -----------------------------
 def determine_augmentation_strategy(config: AugmentationConfig) -> Dict[str, Any]:
+    """
+    Determine the augmentation strategy based on the finetuning goal.
+    """
     goal = config.finetuning_goal.lower()
     strategy = {}
-    # For nuanced/conversational tasks, prefer LLM paraphrasing and back-translation.
     if any(word in goal for word in ["dialogue", "q&a", "conversation", "chat"]):
         strategy["methods"] = ["llm_paraphrasing", "back_translation"]
     else:
-        # Otherwise, include EDA-style synonym replacement and synthetic noise.
         strategy["methods"] = ["eda_synonym_replacement", "llm_paraphrasing", "synthetic_noise"]
-    strategy["diversity_threshold"] = 0.7  # This threshold is tunable.
+    strategy["diversity_threshold"] = 0.7
     logger.info(f"Determined augmentation strategy: {strategy}")
     return strategy
 
 # -----------------------------
-# Helper Functions for Robustness
+# Helper Functions
 # -----------------------------
 def extract_json(text: str) -> dict:
     """
-    Extract the first valid JSON object from text.
-    Uses regex to locate a JSON block and then parse it.
+    Extract the first valid JSON object from a given text.
     """
     json_pattern = re.compile(r'\{.*\}', re.DOTALL)
     match = json_pattern.search(text)
@@ -101,7 +122,7 @@ def extract_json(text: str) -> dict:
 
 def make_hashable(item: Any) -> Any:
     """
-    Recursively convert unhashable types (like lists or dicts) into hashable tuples.
+    Recursively convert unhashable types (lists/dicts) into hashable tuples.
     """
     if isinstance(item, (list, tuple)):
         return tuple(make_hashable(i) for i in item)
@@ -110,15 +131,63 @@ def make_hashable(item: Any) -> Any:
     else:
         return item
 
+def validate_jsonl_record(record: dict) -> bool:
+    """
+    Validates that the record follows the required format for OpenAI:
+    {"messages": [{"role": "system", "content": <str>},
+                  {"role": "user", "content": <non-empty str>},
+                  {"role": "assistant", "content": <non-empty str>}]}
+    """
+    if "messages" not in record:
+        logger.error("Record missing 'messages' key.")
+        return False
+    messages = record["messages"]
+    if not isinstance(messages, list) or len(messages) != 3:
+        logger.error("Record 'messages' must be a list of 3 items.")
+        return False
+    expected_roles = ["system", "user", "assistant"]
+    for msg, role in zip(messages, expected_roles):
+        if not isinstance(msg, dict):
+            logger.error("Each message must be a dictionary.")
+            return False
+        if msg.get("role") != role:
+            logger.error(f"Expected role '{role}', but got '{msg.get('role')}'.")
+            return False
+        if "content" not in msg or not isinstance(msg["content"], str):
+            logger.error("Each message must have a string 'content' field.")
+            return False
+        if role in ["user", "assistant"] and not msg["content"].strip():
+            logger.error(f"Message for role '{role}' has empty content.")
+            return False
+    return True
+
+def get_text(value: Any) -> str:
+    """
+    Ensure the value is returned as a string.
+    If it is a list, return only the first element.
+    If it resembles a dictionary string, attempt to extract the 'text' key.
+    """
+    if isinstance(value, list):
+        value = value[0] if value else ""
+    if isinstance(value, str):
+        try:
+            parsed = ast.literal_eval(value)
+            if isinstance(parsed, dict) and "text" in parsed:
+                return str(parsed["text"])
+        except Exception:
+            pass
+        return value
+    return str(value)
+
 # -----------------------------
-# Step 3: Augmentation Generation via LangChain Groq
+# Augmentation Generation via LangChain Groq
 # -----------------------------
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
 def instantiate_groq_llm(model: str) -> ChatGroq:
     """
-    Instantiate the ChatGroq model using the provided model name and API key.
+    Instantiate a ChatGroq LLM with the given model name.
     """
     return ChatGroq(
         model=model,
@@ -133,8 +202,7 @@ def generate_initial_augmentation(example: StandardExample,
                                     config: AugmentationConfig,
                                     strategy: Dict[str, Any]) -> dict:
     """
-    Generate an initial candidate augmentation using a prompt chain.
-    The output should be valid JSON.
+    Generate an initial candidate augmentation using an LLM prompt chain.
     """
     prompt_template = ChatPromptTemplate.from_messages([
         (
@@ -169,8 +237,7 @@ def refine_augmentation(candidate: dict,
                         config: AugmentationConfig,
                         strategy: Dict[str, Any]) -> dict:
     """
-    Use a second LLM chain to refine the candidate augmentation.
-    If refinement fails (i.e. no valid JSON is returned), return the original candidate.
+    Refine a candidate augmentation using a second LLM prompt chain.
     """
     refinement_template = ChatPromptTemplate.from_messages([
         (
@@ -207,9 +274,7 @@ def refine_augmentation(candidate: dict,
 
 def calculate_metrics(augmentation: dict, original: StandardExample) -> dict:
     """
-    Simulate metric calculations. In practice, compute semantic similarity (e.g., BERTScore),
-    diversity (e.g., SELF-BLEU), and fluency (perplexity).
-    Here we simulate by generating random values in a realistic range.
+    Simulate metric calculations for the candidate augmentation.
     """
     semantic_similarity = random.uniform(0.78, 0.97)
     diversity_score = random.uniform(0.65, 0.9)
@@ -224,10 +289,10 @@ def calculate_metrics(augmentation: dict, original: StandardExample) -> dict:
 
 def metrics_valid(metrics: dict) -> bool:
     """
-    Accept candidate only if:
-      - Semantic similarity is between 0.80 and 0.95 (ensures meaning is preserved but not identical)
-      - Diversity score is at least 0.70
-      - Fluency score is at least 0.80
+    Validate metric thresholds:
+      - Semantic similarity: between 0.80 and 0.95.
+      - Diversity score: at least 0.70.
+      - Fluency score: at least 0.80.
     """
     if metrics["semantic_similarity"] < 0.80 or metrics["semantic_similarity"] > 0.95:
         return False
@@ -237,18 +302,29 @@ def metrics_valid(metrics: dict) -> bool:
         return False
     return True
 
+def quality_check(augmentation: Dict[str, Any], config: AugmentationConfig) -> bool:
+    """
+    Simulate an LLM-based QA check.
+    """
+    qa_prompt = (
+        f"Verify that the following augmentation preserves the intended meaning and style for the input/output pair "
+        f"given the finetuning goal '{config.finetuning_goal}':\n"
+        f"{augmentation['augmentation']}\n"
+        "Answer 'yes' if valid, otherwise 'no'."
+    )
+    logger.debug(f"QA Prompt: {qa_prompt}")
+    return True  # Simulation: always passes
+
 def generate_augmentations(normalized_examples: List[StandardExample],
                            config: AugmentationConfig,
                            strategy: Dict[str, Any],
                            target_count: int = 50) -> List[Dict[str, Any]]:
     """
-    For each normalized example, repeatedly generate (and refine) candidate augmentations until
-    at least `target_count` valid candidates are collected.
-    Invalid candidates (due to JSON extraction or metric failure) are skipped.
+    Repeatedly generate candidate augmentations until at least target_count valid candidates are collected.
     """
     augmented_candidates = []
     attempts = 0
-    max_attempts = 100  # Safety valve to avoid infinite loops
+    max_attempts = 100  # Safety valve
     while len(augmented_candidates) < target_count and attempts < max_attempts:
         for ex in normalized_examples:
             try:
@@ -276,51 +352,9 @@ def generate_augmentations(normalized_examples: List[StandardExample],
         logger.warning(f"Only {len(augmented_candidates)} candidates generated after {attempts} attempts.")
     return augmented_candidates
 
-# -----------------------------
-# Step 4: Quality Assurance and Filtering
-# -----------------------------
-def quality_check(augmentation: Dict[str, Any], config: AugmentationConfig) -> bool:
-    """
-    Simulate an LLM-based QA check. In production, integrate a validator (e.g., via smolagents and HF_TOKEN)
-    to ensure the augmentation aligns with the intended meaning and style.
-    """
-    qa_prompt = (
-        f"Verify that the following augmentation preserves the intended meaning and style for the input/output pair "
-        f"given the finetuning goal '{config.finetuning_goal}':\n"
-        f"{augmentation['augmentation']}\n"
-        "Answer 'yes' if valid, otherwise 'no'."
-    )
-    logger.debug(f"QA Prompt: {qa_prompt}")
-    return True  # Simulation: always passes
-
-# -----------------------------
-# Step 5: Post-Processing and Formatting (OpenAI Fine-Tuning Format)
-# -----------------------------
-def format_for_openai(augmentations: List[Dict[str, Any]]) -> str:
-    """
-    Format each augmentation candidate in the exact OpenAI fine-tuning format.
-    Each JSONL line has the 'messages' key containing a list of messages:
-    - System message (hard-coded here as required)
-    - User message (augmented input)
-    - Assistant message (augmented output)
-    """
-    output_lines = []
-    system_message = "Marv is a factual chatbot that is also sarcastic."  # Hard-coded system prompt
-    for aug in augmentations:
-        record = {
-            "messages": [
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": aug["augmentation"].get("augmented_input")},
-                {"role": "assistant", "content": aug["augmentation"].get("augmented_output")}
-            ]
-        }
-        output_lines.append(json.dumps(record))
-    logger.info(f"Formatted {len(output_lines)} records in OpenAI fine-tuning format.")
-    return "\n".join(output_lines)
-
 def deduplicate_augmentations(augmentations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Remove duplicate or near-duplicate augmentations by converting outputs into hashable keys.
+    Remove duplicate augmentations based on hashable keys.
     """
     seen = set()
     unique_aug = []
@@ -333,10 +367,69 @@ def deduplicate_augmentations(augmentations: List[Dict[str, Any]]) -> List[Dict[
     logger.info(f"Deduplicated to {len(unique_aug)} unique augmentations.")
     return unique_aug
 
+def format_for_openai(augmentations: List[Dict[str, Any]], system_message: str) -> str:
+    """
+    Format augmentations in OpenAI fine-tuning JSONL format.
+    Each record follows:
+    {"messages": [{"role": "system", "content": system_message},
+                   {"role": "user", "content": <augmented_input>},
+                   {"role": "assistant", "content": <augmented_output>}]}
+    """
+    output_lines = []
+    sys_msg = system_message.strip() if system_message and system_message.strip() else ""
+    for aug in augmentations:
+        user_val = get_text(aug["augmentation"].get("augmented_input", "")).strip()
+        assistant_val = get_text(aug["augmentation"].get("augmented_output", "")).strip()
+        record = {
+            "messages": [
+                {"role": "system", "content": sys_msg},
+                {"role": "user", "content": user_val},
+                {"role": "assistant", "content": assistant_val}
+            ]
+        }
+        if validate_jsonl_record(record):
+            output_lines.append(json.dumps(record))
+        else:
+            logger.error(f"Record validation failed: {record}")
+    logger.info(f"Formatted {len(output_lines)} records in OpenAI fine-tuning format.")
+    return "\n".join(output_lines)
+
+def format_for_gemini(augmentations: List[Dict[str, Any]]) -> str:
+    """
+    Format augmentations in Gemini finetuning JSONL format.
+    Each record follows:
+    {
+       "contents": [
+          {"role": "user", "parts": [{"text": <augmented_input>}]},
+          {"role": "model", "parts": [{"text": <augmented_output>}]}
+       ]
+    }
+    """
+    output_lines = []
+    for aug in augmentations:
+        user_val = get_text(aug["augmentation"].get("augmented_input", "")).strip()
+        assistant_val = get_text(aug["augmentation"].get("augmented_output", "")).strip()
+        record = {
+            "contents": [
+                {"role": "user", "parts": [{"text": user_val}]},
+                {"role": "model", "parts": [{"text": assistant_val}]}
+            ]
+        }
+        # Basic validation: ensure both parts are non-empty.
+        if user_val and assistant_val:
+            output_lines.append(json.dumps(record))
+        else:
+            logger.error(f"Gemini record validation failed: {record}")
+    logger.info(f"Formatted {len(output_lines)} records in Gemini fine-tuning format.")
+    return "\n".join(output_lines)
+
 # -----------------------------
-# Step 6: Optional Interactive Review (via Streamlit)
+# Optional Interactive Review (Streamlit)
 # -----------------------------
 def launch_review_app(formatted_data: str):
+    """
+    Launch a Streamlit interface for interactive review of augmented data.
+    """
     import streamlit as st
     st.title("Finetuning Data Augmentation Review")
     st.write("Review and, if necessary, edit the augmented data below.")
@@ -347,66 +440,55 @@ def launch_review_app(formatted_data: str):
         st.success("Data saved successfully to train.jsonl!")
 
 # -----------------------------
-# Step 7: Packaging into a Modular Pipeline and Writing Output
+# Pipeline Class
 # -----------------------------
 class FinetuningDataAugmentor:
+    """
+    Encapsulates the entire augmentation pipeline.
+    """
     def __init__(self, config: AugmentationConfig):
         self.config = config
         self.normalized_examples = normalize_examples(config.examples)
         self.strategy = determine_augmentation_strategy(config)
         self.augmentations = []
 
-    def run_augmentation(self) -> List[Dict[str, Any]]:
+    def run_augmentation(self, target_count: int = 50) -> List[Dict[str, Any]]:
+        """
+        Generate candidate augmentations, deduplicate, and store results.
+        """
         logger.info("Starting augmentation generation via LangChain Groq...")
-        candidates = generate_augmentations(self.normalized_examples, self.config, self.strategy, target_count=50)
+        candidates = generate_augmentations(self.normalized_examples, self.config, self.strategy, target_count=target_count)
         logger.info(f"Generated {len(candidates)} candidate augmentations before deduplication.")
         unique_candidates = deduplicate_augmentations(candidates)
         logger.info(f"{len(unique_candidates)} unique augmentations after deduplication.")
         self.augmentations = unique_candidates
         return unique_candidates
 
-    def get_formatted_output(self) -> str:
-        return format_for_openai(self.augmentations)
+    def get_formatted_output(self, format_type: str = "openai") -> str:
+        """
+        Return the final augmented data in the desired finetuning format.
+        For 'openai', include system message; for 'gemini', use Gemini format.
+        """
+        if format_type.lower() == "openai":
+            return format_for_openai(self.augmentations, self.config.system_message)
+        elif format_type.lower() == "gemini":
+            return format_for_gemini(self.augmentations)
+        else:
+            logger.error(f"Unknown format type: {format_type}. Defaulting to OpenAI format.")
+            return format_for_openai(self.augmentations, self.config.system_message)
 
     def save_to_file(self, filename: str = "train.jsonl"):
+        """
+        Save the formatted augmented data to a file.
+        """
         output = self.get_formatted_output()
         with open(filename, "w") as f:
             f.write(output)
         logger.info(f"Final augmented data saved to {filename}")
 
     def run_review_interface(self):
+        """
+        Launch the interactive review interface.
+        """
         formatted_data = self.get_formatted_output()
         launch_review_app(formatted_data)
-
-# -----------------------------
-# Example Usage
-# -----------------------------
-if __name__ == "__main__":
-    try:
-        # Simulated user input; in practice, these could be collected via a web form or CLI.
-        example_data = [
-            AugmentationExample(input_text="What is the capital of France?", output_text="Paris"),
-            AugmentationExample(input_text="Who wrote '1984'?", output_text="George Orwell"),
-            AugmentationExample(input_text="What is the boiling point of water?", output_text="100°C"),
-            AugmentationExample(input_text="Who is the CEO of Tesla?", output_text="Elon Musk"),
-            AugmentationExample(input_text="What is the largest planet?", output_text="Jupiter")
-        ]
-        config = AugmentationConfig(
-            target_model="mixtral-8x7b-32768",  # Replace with your desired Groq model name
-            examples=example_data,
-            finetuning_goal="Enhance Q&A robustness and nuance preservation"
-        )
-    except ValidationError as e:
-        logger.error(f"Validation error: {e.json()}")
-        exit(1)
-
-    augmentor = FinetuningDataAugmentor(config)
-    augmentor.run_augmentation()
-    final_output = augmentor.get_formatted_output()
-    print("Final Augmented Data:\n", final_output)
-    
-    # Save the final output to train.jsonl (ensuring at least 50 valid pairs)
-    augmentor.save_to_file("train.jsonl")
-    
-    # Optionally, launch an interactive review interface:
-    # augmentor.run_review_interface()
