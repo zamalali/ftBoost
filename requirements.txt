@@ -1,9 +1,4 @@
 # List of dependencies
 streamlit==1.42.2
-os 
-json    
-uuid   
-logging 
-re    
-random 
-ast      
+langchain-groq==0.2.4
+langchain-core==0.3.37
