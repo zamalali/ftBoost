@@ -109,7 +109,7 @@ st.markdown(
 # Step 1: Output Format Selection
 model_type = st.selectbox(
     "Select the output format for finetuning",
-    ["openai models", "gemini models", "mistral", "llama"]
+    ["OpenAI models", "Gemini models", "Mistral models", "Llama models"]
 )
 
 # Step 2: System Message (for OpenAI format)
