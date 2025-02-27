@@ -1,6 +1,6 @@
 <!-- ![Logo](assets/icon.png) -->
 <p align="center">
-  <img src="assets/readme.png" alt="Logo" width="700">
+  <img src="assets/image.webp" alt="Logo" width="400">
 </p>
 
 # ftBoost 🚀
