@@ -95,6 +95,17 @@ components.html(
 # App Title
 st.title("Ft Boost Hero 🚀")
 
+st.markdown(
+    """
+    **Ft Boost Hero** is a powerful tool designed to help you generate high-quality fine-tuning data for AI models. 
+    Whether you're working with OpenAI, Gemini, Mistral, or LLaMA models, this app allows you to create structured 
+    input-output pairs and apply augmentation techniques to enhance dataset quality. With advanced tuning parameters, 
+    semantic similarity controls, and fluency optimization, **Ft Boost Hero** ensures that your fine-tuning data is diverse, 
+    well-structured, and ready for training. 🚀
+    """,
+    unsafe_allow_html=True,
+)
+
 # Step 1: Output Format Selection
 model_type = st.selectbox(
     "Select the output format for finetuning",
