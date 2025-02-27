@@ -55,8 +55,8 @@ The app includes an intuitive UI with interactive sliders to adjust semantic sim
 
 ### Clone the Repository:
 ```bash
-git clone https://github.com/yourusername/ft-boost-hero.git
-cd ft-boost-hero
+git clone https://github.com/zamalali/ftBoost
+cd ftBoost-hero
 ```
 
 ### Set Up Environment:
