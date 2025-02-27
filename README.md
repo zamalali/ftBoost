@@ -1,9 +1,9 @@
 <!-- ![Logo](assets/icon.png) -->
 <p align="center">
-  <img src="assets/image.webp" alt="Logo" width="400">
+  <img src="assets/icon.webp" alt="Logo" width="500">
 </p>
 
-# ftBoost 🚀
+# ftBoost 🐦‍⬛
 
 ftBoost is a powerful data augmentation tool designed to streamline fine-tuning for conversational AI models. Built with Streamlit, it enables users to generate high-quality augmented data in multiple JSONL formats (OpenAI, Gemini, Mistral, and LLama). The tool leverages LangChain Groq for AI-powered augmentation and allows customization through advanced tuning options.
 
