@@ -1,6 +1,6 @@
 <!-- ![Logo](assets/icon.png) -->
 <p align="center">
-  <img src="assets/icon.png" alt="Logo" width="700">
+  <img src="assets/readme.png" alt="Logo" width="700">
 </p>
 
 # Ft Boost Hero 🚀
