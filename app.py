@@ -109,7 +109,7 @@ st.markdown(
 # Step 1: Output Format Selection
 model_type = st.selectbox(
     "Select the output format for finetuning",
-    ["OpenAI models", "Gemini models", "Mistral models", "Llama models"]
+    ["OpenAI Models", "Gemini Models", "Mistral Models", "Llama Models"]
 )
 
 # Step 2: System Message (for OpenAI format)
@@ -118,7 +118,7 @@ system_message = st.text_input("System Message (optional)", value=default_system
 
 # Display an input schema template based on the selected format
 st.markdown("### Input Schema Template")
-if model_type == "openai models":
+if model_type == "OpenAI Models":
     st.code(
         '''{
   "messages": [
@@ -127,7 +127,7 @@ if model_type == "openai models":
     {"role": "assistant", "content": "Paris, as if everyone doesn't know that already."}
   ]
 }''', language="json")
-elif model_type == "gemini models":
+elif model_type == "Gemini Models":
     st.code(
         '''{
   "contents": [
@@ -161,7 +161,7 @@ num_pairs = st.number_input("Number of Pairs", min_value=3, value=3, step=1)
 pair_templates = []
 for i in range(num_pairs):
     st.markdown(f"#### Pair {i+1}")
-    if model_type == "openai models":
+    if model_type == "OpenAI Models":
         init_template = ('''{
   "messages": [
     {"role": "system", "content": "''' + (system_message if system_message.strip() else "") + '''"},
@@ -170,7 +170,7 @@ for i in range(num_pairs):
   ]
 }''').strip()
         ace_key = f"pair_{i}_{model_type}_{system_message}"
-    elif model_type == "gemini models":
+    elif model_type == "Gemini Models":
         init_template = ('''{
   "contents": [
     {"role": "user", "parts": [{"text": "Enter your input text here"}]},
@@ -205,13 +205,13 @@ if st.button("Generate Data"):
     for idx, pair in enumerate(pair_templates):
         try:
             record = json.loads(pair)
-            if model_type == "openai models":
+            if model_type == "OpenAI Models":
                 msgs = record.get("messages", [])
                 if len(msgs) != 3:
                     raise ValueError("Expected 3 messages")
                 input_text = msgs[1].get("content", "").strip()
                 output_text = msgs[2].get("content", "").strip()
-            elif model_type == "gemini models":
+            elif model_type == "Gemini Models":
                 contents = record.get("contents", [])
                 if len(contents) < 2:
                     raise ValueError("Expected at least 2 contents")
@@ -255,13 +255,13 @@ if st.button("Generate Data"):
         augmentor.run_augmentation(target_count=target_augmented)
         
         fmt = model_type.lower()
-        if fmt == "openai models":
+        if fmt == "OpenAI Models":
             output_data = augmentor.get_formatted_output(format_type="openai")
-        elif fmt == "gemini models":
+        elif fmt == "Gemini Models":
             output_data = augmentor.get_formatted_output(format_type="gemini")
-        elif fmt == "mistral":
+        elif fmt == "Mistral Models":
             output_data = augmentor.get_formatted_output(format_type="mistral")
-        elif fmt == "llama":
+        elif fmt == "Llama Models":
             output_data = augmentor.get_formatted_output(format_type="llama")
         else:
             output_data = augmentor.get_formatted_output(format_type="openai")
