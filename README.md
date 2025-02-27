@@ -3,9 +3,9 @@
   <img src="assets/readme.png" alt="Logo" width="700">
 </p>
 
-# Ft Boost Hero 🚀
+# ftBoost 🚀
 
-Ft Boost Hero is a powerful data augmentation tool designed to streamline fine-tuning for conversational AI models. Built with Streamlit, it enables users to generate high-quality augmented data in multiple JSONL formats (OpenAI, Gemini, Mistral, and LLama). The tool leverages LangChain Groq for AI-powered augmentation and allows customization through advanced tuning options.
+ftBoost is a powerful data augmentation tool designed to streamline fine-tuning for conversational AI models. Built with Streamlit, it enables users to generate high-quality augmented data in multiple JSONL formats (OpenAI, Gemini, Mistral, and LLama). The tool leverages LangChain Groq for AI-powered augmentation and allows customization through advanced tuning options.
 
 ---
 
@@ -22,7 +22,7 @@ Ft Boost Hero is a powerful data augmentation tool designed to streamline fine-t
 
 ## Overview
 
-Ft Boost Hero helps users efficiently generate augmented conversational data for fine-tuning language models. It supports multiple formats:
+ftBoost helps users efficiently generate augmented conversational data for fine-tuning language models. It supports multiple formats:
 - **OpenAI:** Uses a structured three-message format.
 - **Gemini:** Organizes content into a structured array.
 - **Mistral & LLama:** Adopts a simplified two-message format.
