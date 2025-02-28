@@ -33,10 +33,46 @@ The app includes an intuitive UI with interactive sliders to adjust semantic sim
 
 ## Features
 
-- **Multi-format support:** Generate JSONL data for OpenAI, Gemini, Mistral, and LLama models.
-- **Customizable augmentation:** Adjust parameters for enhanced data quality.
-- **Efficient AI-driven augmentation:** Uses LangChain Groq to create and refine augmented samples.
-- **Intuitive user experience:** Preview and download generated datasets easily.
+**Multi-format Output:**  
+- Generates augmented data in OpenAI, Gemini, Mistral, and LLama JSONL formats.
+
+**Robust Data Modeling and Validation:**  
+- Uses Pydantic models to validate input/output pairs ensuring non-empty texts.
+- Enforces a minimum of 3 examples per augmentation run.
+
+**Normalization & Standardization:**  
+- Normalizes examples by lowercasing and adding unique IDs.
+- Captures metadata such as the original word count for further processing.
+
+**Dynamic Strategy Selection:**  
+- Inspects the finetuning goal to choose between methods like LLM paraphrasing, back translation, synonym replacement, and synthetic noise.
+- Adjusts strategy based on whether the goal is conversational or general.
+
+**AI-Driven Augmentation Pipeline:**  
+- **Initial Augmentation:**  
+  - Generates candidate augmentations using a LangChain Groq-powered LLM prompt.
+  - Ensures the output is in a valid JSON format with keys `augmented_input` and `augmented_output`.
+- **Refinement Process:**  
+  - Refines the candidate using a second LLM prompt chain to maximize semantic accuracy, diversity, and clarity.
+  - Falls back to the original candidate if refinement fails.
+
+**Quality and Metric Validation:**  
+- Simulates metrics for semantic similarity, diversity, and fluency.
+- Accepts only candidates that meet predefined thresholds.
+- Performs a simulated quality check to verify that the augmentation preserves the intended meaning and style.
+
+**Deduplication:**  
+- Removes duplicate augmentations by hashing normalized input and output pairs, ensuring a unique dataset.
+
+**Flexible Output Formatting:**  
+- Formats data for OpenAI (three-message structure), Gemini (content array), and common formats for Mistral/LLama.
+- Validates JSONL records before final output.
+
+**Streamlit-based Interactive Interface:**  
+- Supports file uploads with auto-detection of format (OpenAI, Gemini, etc.).
+- Provides an Ace editor for manual entry if no file is uploaded.
+- Offers real-time parameter adjustments via interactive sliders.
+- Includes a download button to save the final augmented dataset.
 
 ---
 
