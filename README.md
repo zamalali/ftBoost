@@ -1,6 +1,6 @@
 <!-- ![Logo](assets/icon.png) -->
 <p align="center">
-  <img src="assets/icon.png" alt="Logo" width="500">
+  <img src="assets/cover.png" alt="Logo" width="500">
 </p>
 
 # ftBoost 🏃
