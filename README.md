@@ -127,4 +127,4 @@ GROQ_API_KEY=your_groq_api_key_here
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under Apache 2.0 License. See the LICENSE file for details.
