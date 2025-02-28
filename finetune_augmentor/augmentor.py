@@ -60,8 +60,8 @@ class AugmentationConfig(BaseModel):
 
     @field_validator('examples')
     def check_examples_length(cls, v: List[AugmentationExample]) -> List[AugmentationExample]:
-        if not (3 <= len(v) <= 10):
-            raise ValueError("Provide between 3 and 10 examples")
+        if len(v) < 3:
+            raise ValueError("Provide at least 3 examples")
         return v
 
 class StandardExample(BaseModel):
