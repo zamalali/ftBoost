@@ -1,7 +1,7 @@
 # Architecture
 
 ## Overview
-Ft Boost Hero is built using Streamlit and LangChain Groq to facilitate AI-driven data augmentation for fine-tuning conversational models. The architecture is designed for scalability, modularity, and ease of use.
+ftBoost is built using Streamlit and LangChain Groq to facilitate AI-driven data augmentation for fine-tuning conversational models. The architecture is designed for scalability, modularity, and ease of use.
 
 ## Components
 

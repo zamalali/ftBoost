@@ -4,7 +4,7 @@ augmentor.py
 This module implements a robust and scalable pipeline for finetuning data augmentation.
 It supports generating augmented data in either OpenAI, Gemini, Mistral, or LLama fine‐tuning JSONL format.
 Users may optionally override metric thresholds and load existing examples from a JSONL file.
-All secret keys (e.g. GROQ_API_KEY) are loaded from the .env file.
+The LangChain Groq API key is now provided via the configuration rather than the .env file.
 """
 
 import os
@@ -16,16 +16,14 @@ import random
 import ast
 from typing import List, Dict, Any, Optional
 
-from dotenv import load_dotenv
-load_dotenv()
-
+# Removed dotenv load for GROQ_API_KEY since it is now provided in config
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("FinetuningAugmentor")
 
-# Environment tokens
+# Environment tokens (kept for HF_TOKEN if needed)
 HF_TOKEN = os.getenv("HF_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")  # Must be set in .env
+# GROQ_API_KEY will now be provided in the configuration
 
 # -----------------------------
 # Data Models and Preprocessing
@@ -52,6 +50,7 @@ class AugmentationConfig(BaseModel):
     target_model: str  # e.g., "mixtral-8x7b-32768" or any Groq-supported model name
     examples: List[AugmentationExample]
     finetuning_goal: str
+    groq_api_key: str
     system_message: Optional[str] = "Marv is a factual chatbot that is also sarcastic."
     # Optional metric thresholds (if not provided, defaults are used)
     min_semantic_similarity: Optional[float] = 0.80
@@ -230,9 +229,9 @@ def flatten_content(content: str) -> str:
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
-def instantiate_groq_llm(model: str) -> ChatGroq:
+def instantiate_groq_llm(model: str, groq_api_key: str) -> ChatGroq:
     """
-    Instantiate a ChatGroq LLM with the given model name.
+    Instantiate a ChatGroq LLM with the given model name and API key.
     """
     return ChatGroq(
         model=model,
@@ -240,7 +239,7 @@ def instantiate_groq_llm(model: str) -> ChatGroq:
         max_tokens=256,
         timeout=30,
         max_retries=2,
-        groq_api_key=GROQ_API_KEY
+        groq_api_key=groq_api_key
     )
 
 def generate_initial_augmentation(example: StandardExample,
@@ -272,7 +271,7 @@ def generate_initial_augmentation(example: StandardExample,
         "input_text": example.input_text,
         "output_text": example.output_text
     }
-    chain = prompt_template | instantiate_groq_llm(config.target_model)
+    chain = prompt_template | instantiate_groq_llm(config.target_model, config.groq_api_key)
     ai_msg = chain.invoke(prompt_vars)
     logger.info(f"Initial augmentation for {example.id}: {ai_msg.content.strip()}")
     return extract_json(ai_msg.content.strip())
@@ -307,7 +306,7 @@ def refine_augmentation(candidate: dict,
         "output_text": example.output_text,
         "candidate": json.dumps(candidate)
     }
-    chain = refinement_template | instantiate_groq_llm(config.target_model)
+    chain = refinement_template | instantiate_groq_llm(config.target_model, config.groq_api_key)
     ai_msg = chain.invoke(refinement_vars)
     try:
         refined = extract_json(ai_msg.content.strip())

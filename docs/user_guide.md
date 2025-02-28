@@ -1,7 +1,7 @@
 # User Guide
 
 ## Introduction
-Ft Boost Hero is a user-friendly tool for generating augmented datasets for fine-tuning AI models. This guide will help you navigate its features and optimize your workflow.
+ftBoost is a user-friendly tool for generating augmented datasets for fine-tuning AI models. This guide will help you navigate its features and optimize your workflow.
 
 ## Getting Started
 ### Installation

@@ -1,7 +1,7 @@
 # Developer Guide
 
 ## Introduction
-This guide provides developers with insights into the structure, functionality, and extendability of Ft Boost Hero. The application is built using Streamlit for the UI and LangChain Groq for AI-driven augmentation.
+This guide provides developers with insights into the structure, functionality, and extendability of ftBoost. The application is built using Streamlit for the UI and LangChain Groq for AI-driven augmentation.
 
 ## Project Structure
 ```bash
