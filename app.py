@@ -7,11 +7,29 @@ from streamlit_ace import st_ace  # Editable code block
 # -------------------------------
 # Page Configuration and CSS
 # -------------------------------
+
 st.set_page_config(
     page_title="Finetuning Data Augmentation Generator",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+
+components.html(
+    """
+
+    <div style="position: fixed; top: 10px; right: 10px; z-index: 100;">
+      <a href="https://github.com/zamalali/ftboost" target="_blank">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" style="height: 30px; margin-right: 10px;">
+      </a>
+      <a href="https://huggingface.co/zamal" target="_blank">
+        <img src="https://huggingface.co/front/assets/huggingface_logo.svg" alt="Hugging Face" style="height: 30px;">
+      </a>
+    </div>
+    """,
+    height=40
+)
+
 
 st.markdown(
     """
