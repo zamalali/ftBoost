@@ -92,7 +92,7 @@ The app includes an intuitive UI with interactive sliders to adjust semantic sim
 ### Clone the Repository:
 ```bash
 git clone https://github.com/zamalali/ftBoost
-cd ftBoost-hero
+cd ftBoost
 ```
 
 ### Set Up Environment:
