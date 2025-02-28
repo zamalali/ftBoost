@@ -10,7 +10,7 @@ ftBoost is a powerful data augmentation tool designed to streamline fine-tuning 
 
 ## Demo Video - ftBoost 🎥
 
-https://github.com/user-attachments/assets/8c2085bb-ddac-4b9e-8502-a31fbeeeff6c
+https://github.com/user-attachments/assets/e7ea73c3-77f2-4da1-9d8e-1740ff826236
 
 ---
 
