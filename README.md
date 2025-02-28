@@ -7,6 +7,11 @@
 
 ftBoost is a powerful data augmentation tool designed to streamline fine-tuning for conversational AI models. Built with Streamlit, it enables users to generate high-quality augmented data in multiple JSONL formats (OpenAI, Gemini, Mistral, and LLama). The tool leverages LangChain Groq for AI-powered augmentation and allows customization through advanced tuning options.
 
+
+## Demo Video - ftBoost 🎥
+
+https://github.com/user-attachments/assets/8c2085bb-ddac-4b9e-8502-a31fbeeeff6c
+
 ---
 
 ## Table of Contents
