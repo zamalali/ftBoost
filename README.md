@@ -81,6 +81,30 @@ The app includes an intuitive UI with interactive sliders to adjust semantic sim
 
 ---
 
+
+**Augmentation Techniques**
+- ftBoost uses a variety of augmentation methods that are dynamically selected based on your finetuning goal. The primary techniques include:
+
+**LLM Paraphrasing:**
+- The pipeline instructs an LLM to rephrase input/output pairs. This helps in generating diverse variations while maintaining the original semantic meaning.
+
+**Back Translation:**
+- For conversational goals (e.g., dialogue, Q&A), the system may use back translation. This technique involves translating the text to another language and then back to the original language, producing natural paraphrases.
+
+**EDA (Easy Data Augmentation) – Synonym Replacement:**
+- For more general finetuning tasks, the pipeline can apply EDA techniques such as synonym replacement. This method swaps words with their synonyms to slightly alter the text while preserving meaning.
+
+**Synthetic Noise Injection:**
+- Also used in non-conversational scenarios, synthetic noise introduces controlled randomness or “noise” into the data. This encourages model robustness by exposing it to slightly perturbed inputs.
+
+**Refinement via LLM Prompting:**
+- After generating an initial candidate augmentation, a refinement prompt is sent to the LLM to fine-tune the candidate further. This two-stage process ensures that the final output not only diversifies the training data but also retains clarity and semantic consistency.
+
+**Metric-Based Filtering:**
+- Each candidate is evaluated using simulated metrics for semantic similarity, diversity, and fluency. Only those candidates that pass the predefined thresholds are included in the final output.
+
+---
+
 ## Usage
 
 1. **Select output format** (OpenAI, Gemini, Mistral, or LLama).
