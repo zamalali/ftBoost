@@ -33,6 +33,7 @@ ftBoost helps users efficiently generate augmented conversational data for fine-
 
 The app includes an intuitive UI with interactive sliders to adjust semantic similarity, diversity, and fluency.
 
+#### Now ftBoost also comes with **Ollama** support. Run the Augmentation pipeline fully local 🔥! Read the documentation [here](docs/ollama_augmentor.md)
 ---
 
 ## Features
@@ -137,11 +138,17 @@ HF_TOKEN=your_hf_token_here
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
+### Run with Ollama:
+```bash
+python ollama_augmentor.py --input <PATH_TO_TRAIN_JSONL> --target <NUM_AUGMENTED_PAIRS> --min_semantic <MIN_SEMANTIC_THRESHOLD> --max_semantic <MAX_SEMANTIC_THRESHOLD> --min_diversity <MIN_DIVERSITY_SCORE> --min_fluency <MIN_FLUENCY_SCORE> --model <MODEL_NAME> --finetuning_goal "<FINETUNING_GOAL>" --skip_refinement
+
+```
+
 ---
 
 ## Configuration
 
-- **Target Model:** `mixtral-8x7b-32768` (default model for augmentation).
+- **Target Model:** `mixtral-8x7b-32768` (default model for augmentation with the app).
 - **Customizable Tuning Parameters:**
   - Minimum/Maximum Semantic Similarity
   - Minimum Diversity Score
