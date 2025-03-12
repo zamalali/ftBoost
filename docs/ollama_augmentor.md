@@ -1,6 +1,11 @@
 # ftBoost - Finetuning Data Augmentation Tool
 
-ftBoost is a robust, scalable pipeline for data augmentation designed for fine-tuning conversational AI models. It reads an input JSONL file (in either OpenAI or Gemini format) and generates augmented data using a locally installed Ollama model via its Python interface. The pipeline produces high-quality augmentations by:
+## Demo Video - ftBoost 🎥
+
+https://github.com/user-attachments/assets/2f06a25a-1e14-44fa-9aac-28ff3083e5bc
+
+
+**ftBoost** is a robust, scalable pipeline for data augmentation designed for fine-tuning conversational AI models. It reads an input JSONL file (in either OpenAI or Gemini format) and generates augmented data using a locally installed Ollama model via its Python interface. The pipeline produces high-quality augmentations by:
 
 - Running **multiple generation attempts** per training example and selecting the best candidate based on a simulated diversity score.
 - Optionally refining the candidate augmentation to further improve semantic accuracy, diversity, and clarity.
