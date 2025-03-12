@@ -33,7 +33,7 @@ ftBoost helps users efficiently generate augmented conversational data for fine-
 
 The app includes an intuitive UI with interactive sliders to adjust semantic similarity, diversity, and fluency.
 
-#### Now ftBoost also comes with **Ollama** support. Run the Augmentation pipeline fully local 🔥! Read the documentation [here](docs\ollama_augmentor.md)
+#### Now ftBoost also comes with **Ollama** support. Run the Augmentation pipeline fully local 🔥! Read the documentation [here](docs/ollama_augmentor.md)
 ---
 
 ## Features
